@@ -1,0 +1,5 @@
+node_modules
+dist
+public/external
+.DS_Store
+scripts/pdf/preview.html

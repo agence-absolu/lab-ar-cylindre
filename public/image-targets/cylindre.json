@@ -1,0 +1,31 @@
+{
+  "imagePath": "image-targets/cylindre_luminance.png",
+  "metadata": null,
+  "name": "cylindre",
+  "type": "CYLINDER",
+  "properties": {
+    "left": 24,
+    "top": 0,
+    "width": 1776,
+    "height": 2368,
+    "isRotated": true,
+    "originalWidth": 1824,
+    "originalHeight": 2368,
+    "targetCircumferenceTop": 126,
+    "cylinderCircumferenceTop": 126,
+    "cylinderCircumferenceBottom": 126,
+    "cylinderSideLength": 97.05405405405405,
+    "arcAngle": 360,
+    "coniness": 0,
+    "inputMode": "ADVANCED",
+    "unit": "mm"
+  },
+  "resources": {
+    "originalImage": "cylindre_original.png",
+    "croppedImage": "cylindre_cropped.png",
+    "thumbnailImage": "cylindre_thumbnail.png",
+    "luminanceImage": "cylindre_luminance.png"
+  },
+  "created": 1790687621649,
+  "updated": 1790687621649
+}

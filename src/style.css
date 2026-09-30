@@ -1,0 +1,264 @@
+:root {
+  color-scheme: dark;
+  --bg: #0d0f14;
+  --fg: #f2f4f8;
+  --accent: #ffd34d;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.home {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.home main { width: min(420px, 100%); }
+.home h1 { font-size: clamp(2rem, 8vw, 3rem); margin: 0 0 12px; }
+.home p { max-width: 34ch; margin: 0 auto 24px; line-height: 1.5; opacity: .8; }
+.home .hint { font-size: .85rem; opacity: .5; margin-top: 32px; }
+
+.cta {
+  display: inline-block;
+  padding: 16px 32px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity .3s ease;
+}
+
+.cta[aria-disabled="true"] {
+  opacity: .45;
+  cursor: progress;
+}
+
+/* Barre de progression du préchargement du modèle 3D. */
+#progress {
+  width: min(260px, 70vw);
+  height: 4px;
+  margin: 16px auto 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .15);
+  overflow: hidden;
+  transition: opacity .4s ease;
+}
+
+#progress.done { opacity: 0; }
+
+#progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .2s ease;
+}
+
+/* --- Vue AR ------------------------------------------------------------- */
+
+body.ar { overflow: hidden; }
+
+/* a-scene se met en plein écran tout seul ; on garde juste l'UI par-dessus. */
+#ui {
+  position: fixed;
+  inset: auto 0 0 0;
+  padding: 16px calc(16px + env(safe-area-inset-left)) calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#status {
+  pointer-events: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(8px);
+  font-size: .9rem;
+  text-align: center;
+}
+
+#back {
+  pointer-events: auto;
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 1.2rem;
+}
+
+/* --- Loader ------------------------------------------------------------- */
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 20px;
+  padding: 32px;
+  text-align: center;
+  background: var(--bg);
+  transition: opacity .4s ease;
+}
+
+#loader.hidden { opacity: 0; pointer-events: none; }
+
+#loader .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, .15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 900ms linear infinite;
+}
+
+#loader.failed .spinner { display: none; }
+
+#loader-text { margin: 0; max-width: 32ch; line-height: 1.5; opacity: .8; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  #loader .spinner { animation-duration: 3s; }
+}
+
+/* --- Lien de téléchargement du tuto --------------------------------------- */
+
+#tutorial {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 22px auto 0;
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 14px;
+  color: var(--fg);
+  text-decoration: none;
+  text-align: left;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+#tutorial:hover {
+  border-color: rgba(255, 211, 77, .5);
+  background: rgba(255, 211, 77, .07);
+}
+
+#tutorial svg { flex: none; width: 22px; height: 22px; color: var(--accent); }
+#tutorial span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+#tutorial b { font-size: .92rem; font-weight: 600; }
+#tutorial em { font-style: normal; font-size: .76rem; opacity: .55; }
+
+/* --- Prévisualisation 3D -------------------------------------------------- */
+
+#preview {
+  margin: 28px auto 0;
+  width: 100%;
+}
+
+#viewer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 46vh;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1b2027 0%, #12151a 100%);
+}
+
+/* A-Frame pose des styles en ligne sur la scène et son canvas : `!important`
+   est nécessaire pour qu'ils remplissent réellement le conteneur. */
+#viewer a-scene,
+#viewer a-scene .a-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#anim-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+
+#anim-picker.ready { opacity: 1; }
+
+#anim-picker button {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  color: var(--fg);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#anim-picker button:hover { background: rgba(255, 255, 255, .16); }
+
+#anim-current { flex: 1; min-width: 0; }
+
+#anim-name {
+  margin: 0;
+  font-size: .95rem;
+  font-weight: 600;
+  opacity: 1;
+}
+
+#anim-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#anim-dots button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .22);
+  transition: background .2s ease, transform .2s ease;
+}
+
+#anim-dots button.active {
+  background: var(--accent);
+  transform: scale(1.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #anim-picker, #anim-dots button { transition: none; }
+}
