@@ -1,10 +1,9 @@
 /**
  * Vue AR — Mimosa
  *
- * Étape 1 (active)  : tracking du monde, on pose un objet 3D au tap.
- * Étape 2 (prête)   : détection d'un visuel sur un cylindre en carton.
- *                     Dépose les JSON générés par @8thwall/image-target-cli
- *                     dans src/image-targets/ : ils sont chargés automatiquement.
+ * Détecte un visuel imprimé sur un cylindre en carton et y accroche un modèle
+ * 3D animé. Les cibles déposées dans public/image-targets/ sont chargées
+ * automatiquement (voir le plugin dans vite.config.js).
  */
 
 // ?debug dans l'URL : affiche la console à l'écran (utile sur mobile, où
@@ -89,8 +88,6 @@ engineReady.then(async () => {
   // dans son init() pour câbler l'écran « appareil non supporté ».
   scene.setAttribute('xrextras-runtime-error', '')
   scene.setAttribute('xrextras-almost-there', '')
-  scene.setAttribute('xrextras-gesture-detector', '')
-  scene.setAttribute('xrextras-tap-recenter', '')
   scene.setAttribute('xrconfig', '')
   // xrweb en dernier : c'est lui qui démarre le pipeline caméra.
   scene.setAttribute('xrweb', '')
@@ -145,28 +142,6 @@ if (!applyEnvironment()) {
   scene.addEventListener('renderstart', applyEnvironment, {once: true})
 }
 
-// --- Étape 1 : poser un objet au tap ---------------------------------------
-// Écouteur direct plutôt qu'un composant A-Frame : ce module est différé
-// (type="module"), il s'exécute après le parsing de <a-scene>, donc un
-// composant enregistré ici ne serait jamais attaché à #ground.
-scene.addEventListener('click', (event) => {
-  const point = event.detail?.intersection?.point
-  if (!point) return
-
-  const object = document.createElement('a-entity')
-  object.setAttribute('geometry', 'primitive: box; width: 0.3; height: 0.3; depth: 0.3')
-  object.setAttribute('material', 'color: #ffd34d; metalness: 0.2; roughness: 0.6')
-  object.setAttribute('shadow', 'cast: true')
-  object.setAttribute('position', `${point.x} ${point.y + 0.15} ${point.z}`)
-  object.setAttribute('xrextras-hold-drag', '')
-  object.setAttribute('xrextras-one-finger-rotate', '')
-  object.setAttribute('xrextras-pinch-scale', '')
-  object.setAttribute('class', 'cantap')
-  scene.appendChild(object)
-
-  setStatus('Glisse pour déplacer, pince pour redimensionner.')
-})
-
 // Garde-fou : plutôt qu'un loader qui tourne indéfiniment, on dit ce qui manque.
 const watchdog = setTimeout(() => {
   failLoader('La caméra n\'a pas démarré. Vérifie que la page est servie en '
@@ -178,7 +153,7 @@ scene.addEventListener('realityready', () => {
   hideLoader()
   setStatus(hasImageTargets
     ? 'Vise le visuel sur le cylindre.'
-    : 'Touche le sol pour poser un objet.')
+    : 'Aucune cible image chargée.')
 })
 
 scene.addEventListener('camerastatuschange', ({detail}) => {
@@ -271,6 +246,11 @@ const vertexProbe = new THREE.Vector3()
 let renderCount = 0
 let lastReport = 0
 let lastSkin = ''
+// Chiffre la stabilité du tracking : une perte par seconde ou plus indique un
+// problème physique (taille de la cible, reflets, lumière), pas logiciel.
+let lostCount = 0
+let foundCount = 0
+const startedAt = performance.now()
 const report = (renderer, host) => {
   renderCount++
   const now = performance.now()
@@ -295,7 +275,9 @@ const report = (renderer, host) => {
     + ` vtx=${vtx}`
     + ` skinIdx=${host.geometry.attributes.skinIndex ? 'oui' : 'NON'}`
     + ` bindMode=${host.bindMode}`
-    + ` mat=${host.material.type}`)
+    + ` mat=${host.material.type}`
+    + ` | pertes=${lostCount} reprises=${foundCount}`
+    + ` (${(lostCount / ((now - startedAt) / 60000)).toFixed(1)}/min)`)
 }
 
 // Rotation supplémentaire autour de l'axe vertical, en degrés.
@@ -362,5 +344,41 @@ cylinderModel.addEventListener('model-loaded', ({detail}) => startClips(detail.m
 const alreadyLoaded = cylinderModel.getObject3D('mesh')
 if (alreadyLoaded) startClips(alreadyLoaded)
 
-cylinderTarget.addEventListener('xrextrasfound', () => setStatus('Cible détectée ✓'))
-cylinderTarget.addEventListener('xrextraslost', () => setStatus('Cible perdue — vise à nouveau le cylindre.'))
+/**
+ * Délai de grâce sur la perte de cible.
+ *
+ * `xrextras-named-image-target` masque l'entité dès l'événement `xrimagelost` :
+ * un décrochage de quelques images suffit à faire disparaître le personnage.
+ * Sur un cylindre de 4 cm, ces micro-pertes sont fréquentes.
+ *
+ * On conserve donc la dernière pose connue pendant un court instant. Le
+ * tracking du monde restant actif, le modèle demeure ancré dans la pièce au
+ * lieu de clignoter — et la plupart des décrochages passent inaperçus.
+ */
+const TARGET_GRACE_MS = 800
+
+let hideAt = 0
+const holdLastPose = () => {
+  const {object3D} = cylinderTarget
+  if (performance.now() >= hideAt) {
+    object3D.visible = false
+    return
+  }
+  object3D.visible = true
+  requestAnimationFrame(holdLastPose)
+}
+
+cylinderTarget.addEventListener('xrextrasfound', () => {
+  foundCount++
+  hideAt = 0                       // interrompt un maintien en cours
+  setStatus('Cible détectée ✓')
+})
+
+cylinderTarget.addEventListener('xrextraslost', () => {
+  // Le composant masque l'entité juste APRÈS cet événement : on repasse par
+  // une frame avant de rétablir la visibilité.
+  lostCount++
+  hideAt = performance.now() + TARGET_GRACE_MS
+  requestAnimationFrame(holdLastPose)
+  setStatus('Cible perdue — vise à nouveau le cylindre.')
+})

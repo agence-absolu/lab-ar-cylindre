@@ -118,13 +118,32 @@ s'importe pas comme un module ES.
 généré, donc gitignoré ; `npm run sync` le régénère (appelé automatiquement en
 `postinstall`, `predev` et `prebuild`).
 
-## Étape 1 — vue AR (en place)
+## Stabilité du tracking
 
-Tracking du monde (SLAM). Toucher le sol pose un cube ; glisser / pivoter /
-pincer pour le manipuler (`xrextras-hold-drag`, `-one-finger-rotate`,
-`-pinch-scale`).
+Sur un cylindre de 4 cm, les micro-décrochages sont fréquents. Deux raisons
+s'additionnent : la caméra n'en voit qu'une petite bande à la fois, et
+`xrextras-named-image-target` masque l'entité **dès** l'événement
+`xrimagelost` — quelques images perdues suffisent à faire disparaître le modèle.
 
-## Étape 2 — visuel sur cylindre en carton
+`src/ar.js` conserve donc la dernière pose connue pendant `TARGET_GRACE_MS`
+(800 ms). Le tracking du monde restant actif, le modèle demeure ancré dans la
+pièce plutôt que de clignoter.
+
+`?debug` affiche `pertes`, `reprises` et un taux par minute : de quoi mesurer
+l'effet d'un changement au lieu de l'estimer. Au-delà d'une perte par minute,
+chercher du côté physique (taille, reflets, lumière) plutôt que logiciel.
+
+Leviers, par ordre d'impact décroissant :
+
+| Levier | Pourquoi |
+| --- | --- |
+| Diamètre du cylindre | 4 cm est petit ; la caméra ne voit qu'une bande de ~40 mm utile. Un tube plus large donne bien plus de pixels de features. |
+| Papier mat, pas brillant | les reflets spéculaires effacent localement les features |
+| Collage bord à bord | un chevauchement ou un jour rompt la continuité du modèle cylindrique déclaré |
+| Lumière diffuse et suffisante | le contre-jour crée des reflets, la pénombre allonge le temps de pose et donc le flou de bougé |
+| Mesures exactes | l'épaisseur du papier ajoute au diamètre : remesurer la circonférence sur le rouleau **fini**, pas sur le tube nu |
+
+## Le visuel sur le cylindre
 
 Le câblage est déjà en place dans `ar.html` et `src/ar.js` : il ne manque que la
 cible.

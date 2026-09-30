@@ -39,7 +39,7 @@
       <a-asset-item id="model" src="models/eric.glb"></a-asset-item>
     </a-assets>
 
-    <a-camera position="0 3 0" raycaster="objects: .cantap" cursor="fuse: false; rayOrigin: mouse"></a-camera>
+    <a-camera position="0 0 0"></a-camera>
 
     <!--
       A-Frame 1.8 est en éclairage physiquement correct : l'intensité par
@@ -47,19 +47,8 @@
       rendu très sombre.
     -->
     <a-light type="hemisphere" color="#eaf2ff" ground-color="#8a6f4a" intensity="2.2"></a-light>
-    <a-light type="directional" intensity="2.8" position="1.5 4 2.5" castShadow="true"></a-light>
+    <a-light type="directional" intensity="2.8" position="1.5 4 2.5"></a-light>
     <a-light type="directional" intensity="1" position="-2 1.5 -1.5"></a-light>
-
-    <!-- ÉTAPE 1 — tracking du monde : le sol reçoit les taps pour poser l'objet. -->
-    <a-entity id="world">
-      <a-entity
-        id="ground"
-        class="cantap"
-        geometry="primitive: box; height: 0.05; width: 1000; depth: 1000"
-        position="0 -0.025 0"
-        material="shader: shadow; transparent: true; opacity: 0.4"
-        shadow="receive: true"></a-entity>
-    </a-entity>
 
     <!--
       ÉTAPE 2 — cible image sur le cylindre en carton.
